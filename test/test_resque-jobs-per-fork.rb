@@ -23,21 +23,22 @@ class TestResqueMultiJobFork < Test::Unit::TestCase
     @worker.cant_fork = true
   end
 
-  def test_one_job
+  def test_fewer_jobs_than_per_fork_limit
     Resque::Job.create(:jobs, SomeJob, 1)
     @worker.work(0)
 
     assert_equal([:before_perform_jobs_per_fork, :work_1, :after_perform_jobs_per_fork], $SEQUENCE)
   end
 
-  def test_two_jobs
+  def test_same_number_of_jobs_as_per_fork_limit
     Resque::Job.create(:jobs, SomeJob, 1)
     Resque::Job.create(:jobs, SomeJob, 2)
     @worker.work(0)
+
     assert_equal([:before_perform_jobs_per_fork, :work_1, :work_2, :after_perform_jobs_per_fork], $SEQUENCE)
   end
 
-  def test_three_jobs
+  def test_more_jobs_than_per_fork_limit
     Resque::Job.create(:jobs, SomeJob, 1)
     Resque::Job.create(:jobs, SomeJob, 2)
     Resque::Job.create(:jobs, SomeJob, 3)

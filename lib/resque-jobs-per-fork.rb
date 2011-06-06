@@ -1,7 +1,6 @@
 require 'resque'
 require 'resque/worker'
 
-
 module Resque
 
   # the `before_perform_jobs_per_fork` hook will run in the child perform
@@ -36,20 +35,31 @@ module Resque
 
     def perform_with_jobs_per_fork(job)
       raise "You need to set JOBS_PER_FORK on the command line" unless ENV['JOBS_PER_FORK']
+
       run_hook :before_perform_jobs_per_fork, self
-      jobs_performed ||= 0
-      while jobs_performed < ENV['JOBS_PER_FORK'].to_i do
-        break if @shutdown
-        if jobs_performed == 0
-          perform_without_jobs_per_fork(job)
-        elsif another_job = reserve
-          perform_without_jobs_per_fork(another_job)
+
+      ENV['JOBS_PER_FORK'].to_i.times do |attempts|
+        break if shutdown?
+
+        if attempts > 0
+          # Attempt to reserve another job
+          job = reserve
+
+          if job
+            working_on job
+            procline "Processing #{job.queue} since #{Time.now.to_i}"
+          end
         end
-        jobs_performed += 1
+
+        if job
+          perform_without_jobs_per_fork(job)
+          processed!
+        end
       end
-      jobs_performed = nil
+
       run_hook :after_perform_jobs_per_fork, self
     end
+
     alias_method :perform_without_jobs_per_fork, :perform
     alias_method :perform, :perform_with_jobs_per_fork
   end
