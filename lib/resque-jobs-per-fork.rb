@@ -34,11 +34,11 @@ module Resque
   class Worker
 
     def perform_with_jobs_per_fork(job)
-      raise "You need to set JOBS_PER_FORK on the command line" unless ENV['JOBS_PER_FORK']
+      jobs_per_fork = [ENV['JOBS_PER_FORK'].to_i, 1].max
 
       run_hook :before_perform_jobs_per_fork, self
 
-      ENV['JOBS_PER_FORK'].to_i.times do |attempts|
+      jobs_per_fork.times do |attempts|
         break if shutdown?
 
         if attempts > 0

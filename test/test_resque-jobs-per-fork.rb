@@ -50,19 +50,18 @@ class TestResqueMultiJobFork < Test::Unit::TestCase
     ], $SEQUENCE)
   end
 
-  def test_work_normally_if_env_var_set
-    assert_nothing_raised(RuntimeError) do
-      Resque::Job.create(:jobs, SomeJob, 1)
-      @worker.work(0)
-    end
-  end
-
-  def test_crash_if_no_env_var_set
+  def test_should_default_to_one_job_per_fork_if_env_not_set
     ENV.delete('JOBS_PER_FORK')
 
-    assert_raise(RuntimeError) do
+    assert_nothing_raised(RuntimeError) do
       Resque::Job.create(:jobs, SomeJob, 1)
+      Resque::Job.create(:jobs, SomeJob, 2)
       @worker.work(0)
+
+      assert_equal([
+         :before_perform_jobs_per_fork, :work_1, :after_perform_jobs_per_fork,
+         :before_perform_jobs_per_fork, :work_2, :after_perform_jobs_per_fork
+      ], $SEQUENCE)
     end
   end
 end
