@@ -45,16 +45,15 @@ module Resque
           # Attempt to reserve another job
           job = reserve
 
-          if job
-            working_on job
-            procline "Processing #{job.queue} since #{Time.now.to_i}"
-          end
+          # Exit early if we run out of work to do
+          break unless job
+
+          working_on job
+          procline "Processing #{job.queue} since #{Time.now.to_i}"
         end
 
-        if job
-          perform_without_jobs_per_fork(job)
-          processed!
-        end
+        perform_without_jobs_per_fork(job)
+        processed!
       end
 
       run_hook :after_perform_jobs_per_fork, self
