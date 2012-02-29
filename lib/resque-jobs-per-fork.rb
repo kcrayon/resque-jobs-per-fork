@@ -38,8 +38,8 @@ module Resque
 
       run_hook :before_perform_jobs_per_fork, self
 
-      jobs_per_fork.times do |attempts|
-        if attempts > 0
+      1.upto(jobs_per_fork) do |attempt|
+        if attempt > 1
           # Attempt to reserve another job
           job = reserve
 
@@ -51,7 +51,7 @@ module Resque
         end
 
         perform_without_jobs_per_fork(job)
-        processed!
+        processed! if attempt < jobs_per_fork 
       end
 
       run_hook :after_perform_jobs_per_fork, self
