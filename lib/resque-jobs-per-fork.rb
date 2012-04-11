@@ -34,8 +34,6 @@ module Resque
   class Worker
 
     def perform_with_jobs_per_fork(job)
-      register_signal_handlers
-
       jobs_per_fork = [ENV['JOBS_PER_FORK'].to_i, 1].max
 
       run_hook :before_perform_jobs_per_fork, self
@@ -55,7 +53,7 @@ module Resque
         perform_without_jobs_per_fork(job)
         processed! if attempt < jobs_per_fork 
 
-        break if @paused or @shutdown
+        break if paused? or shutdown?
       end
 
       run_hook :after_perform_jobs_per_fork, self
